@@ -26,7 +26,7 @@ export default function CustomersPage() {
     try {
       const { data, error } = await supabase
         .from('customers')
-        .select('id, first_name, last_name, company_name, city, state')
+        .select('id, first_name, last_name, company_name, email, phone, city, state')
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(50)
