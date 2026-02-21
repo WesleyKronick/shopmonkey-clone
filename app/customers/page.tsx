@@ -1,77 +1,67 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 interface Customer {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  company_name: string | null;
-  customer_type: string;
-  email: string | null;
-  phone: string | null;
-  city: string | null;
-  state: string | null;
+  id: string
+  first_name: string | null
+  last_name: string | null
+  company_name: string | null
+  email: string | null
+  phone: string | null
+  city: string | null
+  state: string | null
 }
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/v3/customer?limit=50')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setCustomers(data.data);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch customers:', err);
-        setLoading(false);
-      });
-  }, []);
+    fetchCustomers()
+  }, [])
 
-  const getCustomerName = (customer: Customer) => {
-    if (customer.company_name) return customer.company_name;
-    return `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unnamed Customer';
-  };
+  async function fetchCustomers() {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, company_name, city, state')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setCustomers(data || [])
+    } catch (error) {
+      console.error('Error fetching customers:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/" className="text-blue-600 hover:text-blue-800 mb-4 inline-block">
-            ← Back to Dashboard
-          </Link>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-              <p className="text-gray-600 mt-1">Manage your customer accounts</p>
+      <nav className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <a href="/" className="text-2xl font-bold text-blue-600">ShopMonkey Clone</a>
+              <span className="ml-4 text-gray-400">/</span>
+              <span className="ml-4 text-lg font-semibold text-gray-700">Customers</span>
             </div>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
-              + Add Customer
-            </button>
           </div>
         </div>
+      </nav>
 
-        {/* Customers List */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">Customer List</h2>
+          </div>
+
           {loading ? (
-            <div className="p-12 text-center text-gray-500">Loading customers...</div>
-          ) : customers.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No customers yet</h3>
-              <p className="text-gray-600">Get started by adding your first customer</p>
-            </div>
+            <div className="px-6 py-8 text-center text-gray-500">Loading customers...</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -81,10 +71,7 @@ export default function CustomersPage() {
                       Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
+                      Company
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Location
@@ -95,37 +82,52 @@ export default function CustomersPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {customers.map(customer => (
-                    <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {getCustomerName(customer)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                          {customer.customer_type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div>{customer.email || '-'}</div>
-                        <div>{customer.phone || '-'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {customer.city && customer.state ? `${customer.city}, ${customer.state}` : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-4">View</button>
-                        <button className="text-gray-600 hover:text-gray-900">Edit</button>
+                  {customers.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                        No customers found
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    customers.map((customer) => (
+                      <tr key={customer.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {customer.first_name || customer.last_name
+                              ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim()
+                              : '(No name)'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {customer.company_name || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            {customer.city && customer.state
+                              ? `${customer.city}, ${customer.state}`
+                              : customer.city || customer.state || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <button className="text-blue-600 hover:text-blue-800">View</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           )}
+
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="text-sm text-gray-700">
+              Showing {customers.length} customers
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
-  );
+  )
 }
