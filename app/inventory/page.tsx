@@ -3,8 +3,17 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
+interface InventoryItem {
+  id: string
+  part_number: string
+  name: string
+  quantity: number
+  cost: number
+  price: number
+}
+
 export default function Inventory() {
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -74,7 +83,7 @@ export default function Inventory() {
                   </td>
                 </tr>
               ) : (
-                items.map((item: any) => (
+                items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50 cursor-pointer">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {item.part_number}
